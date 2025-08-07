@@ -46,7 +46,7 @@ jobs:
 
       - name: Create mirror pull request via REST API
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PAT: ${{ secrets.PAT }}
           REPO: ${{ github.repository }}
         run: |
           PR_TITLE="Mirror PR: ${{ github.event.pull_request.title }}"
@@ -57,12 +57,11 @@ jobs:
           echo "Creating PR from $HEAD to $BASE..."
 
           curl -s -X POST https://api.github.com/repos/${REPO}/pulls \
-            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Authorization: Bearer ${PAT}" \
             -H "Accept: application/vnd.github+json" \
-            -d @- <<EOF
-          {
-            "title": "$PR_TITLE",
-            "head": "$HEAD",
-            "base": "$BASE",
-            "body": "$PR_BODY"
-          }
+            -d "$(jq -n \
+              --arg title "$PR_TITLE" \
+              --arg head "$HEAD" \
+              --arg base "$BASE" \
+              --arg body "$PR_BODY" \
+              '{title: $title, head: $head, base: $base, body: $body}')"
