@@ -44,12 +44,25 @@ jobs:
           git cherry-pick $BASE_SHA..$HEAD_SHA
           git push origin $TEMP_BRANCH
 
-      - name: Create mirror pull request
+      - name: Create mirror pull request via REST API
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
         run: |
-          gh pr create \
-            --title "Mirror PR: ${{ github.event.pull_request.title }}" \
-            --body "Mirrored from #${{ github.event.pull_request.number }}" \
-            --base "${{ steps.branch.outputs.target_branch }}" \
-            --head "mirror-pr-${{ github.event.pull_request.number }}"
+          PR_TITLE="Mirror PR: ${{ github.event.pull_request.title }}"
+          PR_BODY="Mirrored from original PR #${{ github.event.pull_request.number }}"
+          HEAD="mirror-pr-${{ github.event.pull_request.number }}"
+          BASE="${{ steps.branch.outputs.target_branch }}"
+
+          echo "Creating PR from $HEAD to $BASE..."
+
+          curl -s -X POST https://api.github.com/repos/${REPO}/pulls \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -d @- <<EOF
+          {
+            "title": "$PR_TITLE",
+            "head": "$HEAD",
+            "base": "$BASE",
+            "body": "$PR_BODY"
+          }
