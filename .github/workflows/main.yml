@@ -1,5 +1,7 @@
 name: Mirror Pull Request
-permissions: write-all
+permissions:
+  contents: write
+  pull-requests: write
 
 on:
   pull_request:
@@ -14,7 +16,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # important for cherry-picking
+          fetch-depth: 0
 
       - name: Set up Git config
         run: |
@@ -32,30 +34,22 @@ jobs:
 
       - name: Create temp branch and cherry-pick commits
         run: |
-          # Set variables
           PR_NUM=${{ github.event.pull_request.number }}
           HEAD_SHA=${{ github.event.pull_request.head.sha }}
           BASE_SHA=$(git merge-base origin/${{ github.base_ref }} $HEAD_SHA)
           TEMP_BRANCH=mirror-pr-$PR_NUM
 
-          # Create temp branch from target branch
           git fetch origin ${{ steps.branch.outputs.target_branch }}
           git checkout -b $TEMP_BRANCH origin/${{ steps.branch.outputs.target_branch }}
-
-          # Cherry-pick commits
           git cherry-pick $BASE_SHA..$HEAD_SHA
-
-          # Push temp branch
           git push origin $TEMP_BRANCH
 
       - name: Create mirror pull request
-        uses: cli/cli-action@v2
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          script: |
-            gh pr create \
-              --title "Mirror PR: ${{ github.event.pull_request.title }}" \
-              --body "Mirrored from #${{ github.event.pull_request.number }}" \
-              --base "${{ steps.branch.outputs.target_branch }}" \
-              --head "mirror-pr-${{ github.event.pull_request.number }}"
+        run: |
+          gh pr create \
+            --title "Mirror PR: ${{ github.event.pull_request.title }}" \
+            --body "Mirrored from #${{ github.event.pull_request.number }}" \
+            --base "${{ steps.branch.outputs.target_branch }}" \
+            --head "mirror-pr-${{ github.event.pull_request.number }}"
