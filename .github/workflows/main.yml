@@ -1,0 +1,26 @@
+﻿name: Mirror Pull Request
+permissions: write-all
+
+on:
+  pull_request:
+  
+jobs:
+  create-empty-pr:
+    runs-on:  ubuntu-latest
+    if: github.base_ref == 'master_HEI' || github.base_ref == 'master_HEN'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Print current user
+      run: whoami
+
+    - name: Debug branch information
+      run: |
+        echo "GitHub event name: ${{ github.event_name }}"
+        echo "Base branch: ${{ github.base_ref }}"
+        echo "Head branch: ${{ github.head_ref }}"
+        echo "Pull request number: ${{ github.event.pull_request.number }}"
+        echo "Pull request title: ${{ github.event.pull_request.title }}"
+        echo "Pull request state: ${{ github.event.pull_request.state }}"
+        echo "Action: ${{ github.event.action }}"
